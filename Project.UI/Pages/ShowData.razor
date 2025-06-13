@@ -1,0 +1,134 @@
+﻿@page "/data"
+@using Project.DataModel;
+@using Project.UI.Services;
+@inject IEmployeeService _EmployeeService;
+
+<h3>Employee Details</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+else if (employees == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!employees.Any())
+{
+    <h4>No data available.</h4>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Department</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var employee in employees)
+            {
+                <tr>
+                    @if (editEmployee != null && editEmployee.Id == employee.Id)
+                    {
+                        <td>@editEmployee.Id</td>
+                        <td><input class="form-control" @bind="editEmployee.Name" /></td>
+                        <td><input class="form-control" @bind="editEmployee.Email" /></td>
+                        <td><input class="form-control" type="number" @bind="editEmployee.Age" /></td>
+                        <td><input class="form-control" @bind="editEmployee.Department" /></td>
+                        <td>
+                            <button class="btn btn-success btn-sm" @onclick="SaveEditEmployee">Save</button>
+                            <button class="btn btn-secondary btn-sm" @onclick="CancelEdit">Cancel</button>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>@employee.Id</td>
+                        <td>@employee.Name</td>
+                        <td>@employee.Email</td>
+                        <td>@employee.Age</td>
+                        <td>@employee.Department</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" @onclick="() => StartEdit(employee)">Edit</button>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+
+<EditForm Model="newEmployee" OnValidSubmit="AddNewEmployee">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <InputText class="form-control" placeholder="Name" @bind-Value="newEmployee.Name" />
+    </div>
+    <div class="form-group">
+        <InputText class="form-control" placeholder="Email" @bind-Value="newEmployee.Email" />
+    </div>
+    <div class="form-group">
+        <InputNumber class="form-control" placeholder="Age" @bind-Value="newEmployee.Age" />
+    </div>
+    <div class="form-group">
+        <InputSelect class="form-control" @bind-Value="newEmployee.Department">
+            <option value="">-- Select Department --</option>
+            <option>IT</option>
+            <option>HR</option>
+            <option>Finance</option>
+            <option>QA</option>
+        </InputSelect>
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Add Employee</button>
+</EditForm>
+
+
+@if (!string.IsNullOrEmpty(addMessage))
+{
+    <div class="mt-2 alert alert-info">@addMessage</div>
+}
+
+<hr />
+
+<h4>Delete Employee by ID</h4>
+<div class="form-group">
+    <input class="form-control" placeholder="Enter ID" @bind="deleteId" type="number" />
+    <button class="btn btn-danger mt-2" @onclick="DeleteEmployeeById">Delete</button>
+</div>
+
+@if (!string.IsNullOrEmpty(deleteMessage))
+{
+    <div class="mt-2 alert alert-warning">@deleteMessage</div>
+}
+
+<hr />
+
+<h4>Search Employee by ID</h4>
+<div class="form-group">
+    <input class="form-control" placeholder="Enter ID" @bind="searchId" type="number" />
+    <button class="btn btn-secondary mt-2" @onclick="SearchEmployeeById">Search</button>
+</div>
+
+@if (searchedEmployee != null)
+{
+    <div class="mt-2 alert alert-success">
+        <strong>Found:</strong><br />
+        Name: @searchedEmployee.Name<br />
+        ID: @searchedEmployee.Id<br />
+        Email: @searchedEmployee.Email<br />
+        Age: @searchedEmployee.Age<br />
+        Department: @searchedEmployee.Department
+    </div>
+}
+else if (!string.IsNullOrEmpty(searchMessage))
+{
+    <div class="mt-2 alert alert-warning">@searchMessage</div>
+}
