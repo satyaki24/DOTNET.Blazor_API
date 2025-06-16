@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Project.API.Data;
 using Project.DataModel;
 
 namespace Project.API.Controllers
@@ -8,73 +10,81 @@ namespace Project.API.Controllers
     [ApiController]
     public class EmployeeController : ControllerBase
     {
-        private static List<Employee> employees = new List<Employee>();
+        private readonly AppDbContext _context;
+
+        public EmployeeController(AppDbContext context)
+        {
+            _context = context;
+        }
 
         [HttpGet]
         [Route("GetAllEmployees")]
 
-        public IActionResult GetAllEmployees()
+        public async Task<IActionResult> GetAllEmployees()
         {
+            var employees = await _context.Employees.ToListAsync();
             return Ok(employees);
         }
 
         [HttpGet]
         [Route("GetEmployeeById/{id}")]
-        public IActionResult GetEmployeeById(int id)
+        public async Task<IActionResult> GetEmployeeById(int id)
         {
-            var employee = employees.FirstOrDefault(e => e.Id == id);
+            var employee = await _context.Employees.FindAsync(id);
             if (employee == null)
                 return NotFound($"Employee with ID {id} not found.");
-
             return Ok(employee);
         }
 
         [HttpDelete]
         [Route("DeleteAllEmployees")]
-        public IActionResult DeleteAllEmployees()
+        public async Task<IActionResult> DeleteAllEmployees()
         {
-            employees.Clear();
+            var allEmployees = await _context.Employees.ToListAsync();
+            _context.Employees.RemoveRange(allEmployees);
+            await _context.SaveChangesAsync();
             return Ok("All employees have been deleted.");
         }
 
         [HttpDelete]
         [Route("DeleteEmployeeById/{id}")]
-        public IActionResult DeleteEmployeeById(int id)
+        public async Task<IActionResult> DeleteEmployeeById(int id)
         {
-            var employee = employees.FirstOrDefault(e => e.Id == id);
+            var employee = await _context.Employees.FindAsync(id);
             if (employee == null)
                 return NotFound($"Employee with ID {id} not found.");
 
-            employees.Remove(employee);
+            _context.Employees.Remove(employee);
+            await _context.SaveChangesAsync();
             return Ok($"Employee with ID {id} has been deleted.");
         }
 
         [HttpPost]
         [Route("AddEmployee")]
-        public IActionResult AddEmployee([FromBody] Employee newEmployee)
+        public async Task<IActionResult> AddEmployee([FromBody] Employee newEmployee)
         {
-            if (newEmployee == null)
-                return BadRequest("Employee data is null.");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            int nextId = employees.Any() ? employees.Max(e => e.Id) + 1 : 1;
-            newEmployee.Id = nextId;
-
-            employees.Add(newEmployee);
+            _context.Employees.Add(newEmployee);
+            await _context.SaveChangesAsync();
             return Ok($"Employee with ID {newEmployee.Id} added successfully.");
         }
 
         [HttpPut]
         [Route("UpdateEmployee")]
-        public IActionResult UpdateEmployee([FromBody] Employee updatedEmployee)
+        public async Task<IActionResult> UpdateEmployee([FromBody] Employee updatedEmployee)
         {
-            var existingEmployee = employees.FirstOrDefault(e => e.Id == updatedEmployee.Id);
+            var existingEmployee = await _context.Employees.FindAsync(updatedEmployee.Id);
             if (existingEmployee == null)
                 return NotFound($"Employee with ID {updatedEmployee.Id} not found.");
 
             existingEmployee.Name = updatedEmployee.Name;
+            existingEmployee.Email = updatedEmployee.Email;
             existingEmployee.Age = updatedEmployee.Age;
             existingEmployee.Department = updatedEmployee.Department;
 
+            await _context.SaveChangesAsync();
             return Ok($"Employee with ID {updatedEmployee.Id} updated successfully.");
         }
 
